@@ -3,460 +3,1391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>歌词对齐数据可视化</title>
+    <title>歌词识别数据可视化</title>
+    <script src="https://unpkg.com/wavesurfer.js@6.6.4/dist/wavesurfer.min.js"></script>
+    <!-- Font Awesome图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .file-inputs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .file-input-group {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .file-input-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 15px;
+        }
+
+        .file-input-group label i {
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-input::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .file-input:hover::before {
+            left: 100%;
+        }
+
+        .file-input:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .file-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .file-input::file-selector-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-right: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-input::file-selector-button:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            transform: translateY(-1px);
+        }
+
+        .playback-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-width: 60px;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+
+        .btn:hover::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        .btn i {
+            font-size: 18px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-width: 120px;
+        }
+
+        .btn-play:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-play.playing {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-play.playing:hover {
+            box-shadow: 0 8px 25px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            color: white;
+            min-width: 100px;
+        }
+
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #e73c00 0%, #f39c00 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(252, 74, 26, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .time-display {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .waveform-container {
+            padding: 30px;
+            background: white;
+        }
+
+        #waveform {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        /* 增强播放光标样式 */
+        #waveform .wavesurfer-cursor {
+            background: linear-gradient(to bottom, #ff6b6b, #ff5252) !important;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.6), 0 0 20px rgba(255, 107, 107, 0.4) !important;
+            border-radius: 2px !important;
+            z-index: 15 !important;
+        }
+
+        .word-marker {
+            position: absolute;
+            width: 2px;
+            height: 100%;
+            background: #ff6b6b;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.8;
+        }
+
+        .word-marker:hover {
+            opacity: 1;
+            width: 3px;
+        }
+
+        .lyrics-container {
+            padding: 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .lyrics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .lyrics-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .lyrics-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+
+
+        .lyrics-section {
             background: white;
             border-radius: 10px;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        
-        .controls {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .file-input {
-            margin: 10px 0;
-        }
-        
-        .file-input label {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #007bff;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        
-        .file-input input[type="file"] {
-            display: none;
-        }
-        
-        .audio-controls {
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        audio {
-            width: 100%;
-            max-width: 600px;
-        }
-        
-        .lyrics-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .phonemes-section, .words-section {
-            flex: 1;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-        }
-        
+
         .section-title {
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #495057;
             margin-bottom: 15px;
-            color: #333;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
         }
-        
-        .phoneme, .word {
-            display: inline-block;
-            margin: 2px;
-            padding: 4px 8px;
+
+
+
+
+
+        .tech-indicators {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tech-indicator {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .tech-pharyngeal { background: #ff6b6b; }
+        .tech-strong { background: #4ecdc4; }
+        .tech-glissando { background: #45b7d1; }
+        .tech-bubble { background: #96ceb4; }
+        .tech-breathe { background: #feca57; }
+        .tech-vibrato { background: #ff9ff3; }
+        .tech-falsetto { background: #54a0ff; }
+        .tech-weak { background: #5f27cd; }
+        .tech-mixed { background: #00d2d3; }
+
+        .phoneme-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 10px;
+        }
+
+        .phoneme {
+            font-size: 11px;
+            padding: 2px 6px;
+            background: #e9ecef;
             border-radius: 4px;
-            background: #f0f0f0;
-            font-size: 14px;
+            color: #495057;
         }
-        
-        .word {
-            font-size: 16px;
-            margin: 3px;
-            padding: 6px 10px;
+
+        .phoneme.active {
+            background: #2196f3;
+            color: white;
         }
-        
-        .current {
-            background: #ffeb3b !important;
-            transform: scale(1.1);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
         }
-        
-        .technique-indicators {
-            margin-top: 20px;
-            padding: 15px;
+
+        .word-chip {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
             background: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-width: 60px;
         }
-        
-        .technique-row {
-            margin: 5px 0;
+
+        .word-chip:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .word-chip.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1976d2;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .word-chip-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #212529;
+            line-height: 1;
+        }
+
+        .word-chip.active .word-chip-text {
+            color: #1976d2;
+        }
+
+        .word-chip-info {
             display: flex;
             align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
-        
-        .technique-name {
-            width: 120px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        
-        .technique-track {
-            flex: 1;
-            height: 20px;
-            display: flex;
-        }
-        
-        .technique-segment {
-            height: 100%;
-        }
-        
-        .technique-active {
-            opacity: 0.8;
-        }
-        
-        .technique-inactive {
-            opacity: 0.2;
-        }
-        
-        /* 不同技巧的颜色 */
-        .pharyngeal { background-color: #ff9800; }
-        .glissando { background-color: #2196f3; }
-        .strong { background-color: #f44336; }
-        .vibrato { background-color: #9c27b0; }
-        .falsetto { background-color: #00bcd4; }
-        .bubble { background-color: #4caf50; }
-        .breathe { background-color: #795548; }
-        .weak { background-color: #607d8b; }
-        
-        .info-panel {
-            margin-top: 20px;
-            padding: 15px;
-            background: #e3f2fd;
-            border-radius: 8px;
-            font-family: monospace;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #ddd;
+
+        .word-chip-duration {
+            font-size: 10px;
+            color: #6c757d;
+            background: #e9ecef;
+            padding: 2px 4px;
             border-radius: 3px;
-            margin: 10px 0;
-            overflow: hidden;
+            line-height: 1;
         }
-        
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, #007bff, #0056b3);
-            transition: width 0.1s ease;
+
+        .word-chip-note {
+            font-size: 10px;
+            color: #fff;
+            background: #ff6b6b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            min-width: 20px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .word-chip-tech {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .word-chip-tech .tech-indicator {
+            font-size: 8px;
+            padding: 1px 3px;
+            border-radius: 2px;
+        }
+
+        .style-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .style-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .style-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .style-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 768px) {
+            .file-inputs {
+                flex-direction: column;
+            }
+            
+            .playback-controls {
+                justify-content: center;
+            }
+            
+            .lyrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Tooltip相关样式 */
+        .waveform-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .waveform-tooltip.show {
+            opacity: 1;
+        }
+
+        .waveform-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            border: 6px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+            transform: translateX(-50%);
+        }
+
+        .tooltip-word {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #ffffff;
+            line-height: 1.2;
+        }
+
+        .tooltip-phoneme {
+            font-size: 12px;
+            color: #cccccc;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .tooltip-note {
+            font-size: 12px;
+            color: #ff9ff3;
+            font-weight: 600;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .tooltip-time {
+            font-size: 11px;
+            color: #aaaaaa;
+            margin-top: 6px;
+            border-top: 1px solid #444444;
+            padding-top: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .tooltip-tech {
+            margin-top: 6px;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .tooltip-tech-item {
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: white;
+            font-weight: 600;
+            display: inline-block;
+            line-height: 1;
+        }
+
+        /* 技术标注颜色 - 和原有的保持一致 */
+        .tooltip-tech-item.tech-pharyngeal { 
+            background: #ff6b6b; 
+        }
+
+        .tooltip-tech-item.tech-strong { 
+            background: #4ecdc4; 
+        }
+
+        .tooltip-tech-item.tech-glissando { 
+            background: #45b7d1; 
+        }
+
+        .tooltip-tech-item.tech-bubble { 
+            background: #96ceb4; 
+        }
+
+        .tooltip-tech-item.tech-breathe { 
+            background: #feca57; 
+        }
+
+        .tooltip-tech-item.tech-vibrato { 
+            background: #ff9ff3; 
+        }
+
+        .tooltip-tech-item.tech-falsetto { 
+            background: #54a0ff; 
+        }
+
+        .tooltip-tech-item.tech-weak { 
+            background: #5f27cd; 
+        }
+
+        .tooltip-tech-item.tech-mixed { 
+            background: #00d2d3; 
+        }
+
+        /* 确保waveform容器的样式 */
+        .waveform-container {
+            padding: 30px;
+            background: white;
+            position: relative;
+        }
+
+        #waveform {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>歌词对齐数据可视化</h1>
-        
+        <div class="header">
+            <h1>🎵 歌词识别数据可视化</h1>
+            <p>加载音频文件和歌词对齐数据，体验完整的音乐可视化分析</p>
+        </div>
+
         <div class="controls">
-            <div class="file-input">
-                <label for="jsonFile">选择JSON文件</label>
-                <input type="file" id="jsonFile" accept=".json" />
-                <span id="jsonStatus">未选择文件</span>
+            <div class="file-inputs">
+                <div class="file-input-group">
+                    <label for="audioFile">
+                        <i class="fas fa-music"></i>
+                        选择音频文件
+                    </label>
+                    <input type="file" id="audioFile" class="file-input" accept="audio/*">
+                </div>
+                <div class="file-input-group">
+                    <label for="jsonFile">
+                        <i class="fas fa-file-code"></i>
+                        选择歌词对齐数据 (JSON)
+                    </label>
+                    <input type="file" id="jsonFile" class="file-input" accept=".json">
+                </div>
             </div>
-            
-            <div class="file-input">
-                <label for="audioFile">选择音频文件</label>
-                <input type="file" id="audioFile" accept="audio/*" />
-                <span id="audioStatus">未选择文件</span>
+
+            <div class="playback-controls">
+                <button id="playPauseBtn" class="btn btn-play">
+                    <i class="fas fa-play" id="playIcon"></i>
+                    <span id="playText">播放</span>
+                </button>
+                <button id="stopBtn" class="btn btn-stop">
+                    <i class="fas fa-stop"></i>
+                    <span>停止</span>
+                </button>
+                <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+                <div class="keyboard-hint" style="font-size: 12px; color: #6c757d; margin-left: 10px;">
+                    💡 按空格键播放/暂停
+                </div>
+            </div>
+
+            <div id="loading" class="loading">
+                <p>正在加载数据，请稍候...</p>
             </div>
         </div>
-        
-        <div class="audio-controls">
-            <audio id="audioPlayer" controls style="display: none;">
-                您的浏览器不支持音频播放。
-            </audio>
-            <div class="progress-bar">
-                <div class="progress" id="progressBar"></div>
-            </div>
+
+        <div class="waveform-container">
+            <div id="waveform"></div>
+            <!-- 新增的tooltip元素 -->
+            <div id="waveform-tooltip" class="waveform-tooltip"></div>
         </div>
-        
+
         <div class="lyrics-container">
-            <div class="phonemes-section">
-                <div class="section-title">音素序列 (Phonemes)</div>
-                <div id="phonemesDisplay"></div>
+            <div class="lyrics-header">
+                <div class="lyrics-title">歌词与标注数据</div>
             </div>
-            
-            <div class="words-section">
-                <div class="section-title">词汇序列 (Words)</div>
-                <div id="wordsDisplay"></div>
-            </div>
-        </div>
-        
-        <div class="technique-indicators">
-            <div class="section-title">演唱技巧可视化</div>
-            <div id="techniquesDisplay"></div>
-        </div>
-        
-        <div class="info-panel">
-            <div>当前时间: <span id="currentTime">0.00</span>s</div>
-            <div>当前音素: <span id="currentPhoneme">-</span></div>
-            <div>当前词汇: <span id="currentWord">-</span></div>
-            <div>当前音符: <span id="currentNote">-</span></div>
+            <div id="lyricsContent"></div>
         </div>
     </div>
 
     <script>
-        let songData = null;
-        let audioPlayer = null;
-        let currentPhonemeIndex = -1;
-        let currentWordIndex = -1;
-        
-        // 技巧名称映射
-        const techniqueNames = {
-            'pharyngeal_tech': '咽音技巧',
-            'glissando_tech': '滑音技巧', 
-            'strong_tech': '强音技巧',
-            'vibrato_tech': '颤音技巧',
-            'falsetto_tech': '假音技巧',
-            'bubble_tech': '泡音技巧',
-            'breathe_tech': '气息技巧',
-            'weak_tech': '弱音技巧'
-        };
-        
-        const techniqueColors = {
-            'pharyngeal_tech': 'pharyngeal',
-            'glissando_tech': 'glissando',
-            'strong_tech': 'strong',
-            'vibrato_tech': 'vibrato',
-            'falsetto_tech': 'falsetto',
-            'bubble_tech': 'bubble',
-            'breathe_tech': 'breathe',
-            'weak_tech': 'weak'
-        };
-        
-        // 文件选择处理
-        document.getElementById('jsonFile').addEventListener('change', handleJsonFile);
-        document.getElementById('audioFile').addEventListener('change', handleAudioFile);
-        
-        function handleJsonFile(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        songData = Array.isArray(data) ? data[0] : data;
-                        document.getElementById('jsonStatus').textContent = `已加载: ${file.name}`;
-                        displayLyrics();
-                        displayTechniques();
-                    } catch (error) {
-                        alert('JSON文件格式错误: ' + error.message);
-                    }
-                };
-                reader.readAsText(file);
-            }
-        }
-        
-        function handleAudioFile(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const audioPlayer = document.getElementById('audioPlayer');
-                const url = URL.createObjectURL(file);
-                audioPlayer.src = url;
-                audioPlayer.style.display = 'block';
-                document.getElementById('audioStatus').textContent = `已加载: ${file.name}`;
+        class LyricsVisualizer {
+            constructor() {
+                this.wavesurfer = null;
+                this.currentData = null;
+                this.markers = [];
+                this.regions = [];
+                this.currentTime = 0;
+                this.tooltip = null;
+                this.wordData = []; // 存储单词时间信息
+                this.phonemeData = []; // 存储音素时间信息
                 
-                // 添加时间更新监听器
-                audioPlayer.addEventListener('timeupdate', updateHighlight);
-                audioPlayer.addEventListener('loadedmetadata', function() {
-                    console.log('音频时长:', audioPlayer.duration);
+                this.initializeWaveSurfer();
+                this.bindEvents();
+                this.initializeTooltip();
+                this.updatePlayButton(false); // 初始化按钮状态
+            }
+
+            initializeWaveSurfer() {
+                this.wavesurfer = WaveSurfer.create({
+                    container: '#waveform',
+                    waveColor: '#4F4A85',
+                    progressColor: '#667eea',
+                    cursorColor: '#ff6b6b',
+                    barWidth: 2,
+                    barRadius: 3,
+                    cursorWidth: 4,
+                    height: 200,
+                    barGap: 3,
+                    responsive: true,
+                    normalize: true
+                });
+
+                this.wavesurfer.on('ready', () => {
+                    this.updateTimeDisplay();
+                    // 如果有歌词数据，绘制标记
+                    if (this.markers.length > 0) {
+                        this.drawWordMarkers();
+                    }
+                });
+
+                this.wavesurfer.on('audioprocess', () => {
+                    this.updateTimeDisplay();
+                    this.updateCurrentWord();
+                });
+
+                this.wavesurfer.on('seek', () => {
+                    this.updateTimeDisplay();
+                    this.updateCurrentWord();
+                });
+
+                this.wavesurfer.on('finish', () => {
+                    this.updatePlayButton(false);
                 });
             }
-        }
-        
-        function displayLyrics() {
-            if (!songData) return;
-            
-            // 显示音素
-            const phonemesDisplay = document.getElementById('phonemesDisplay');
-            phonemesDisplay.innerHTML = '';
-            songData.ph_list.forEach((phoneme, index) => {
-                const span = document.createElement('span');
-                span.className = 'phoneme';
-                span.textContent = phoneme;
-                span.id = `phoneme-${index}`;
-                phonemesDisplay.appendChild(span);
-            });
-            
-            // 显示词汇
-            const wordsDisplay = document.getElementById('wordsDisplay');
-            wordsDisplay.innerHTML = '';
-            songData.word_list.forEach((word, index) => {
-                const span = document.createElement('span');
-                span.className = 'word';
-                span.textContent = word;
-                span.id = `word-${index}`;
-                wordsDisplay.appendChild(span);
-            });
-        }
-        
-        function displayTechniques() {
-            if (!songData) return;
-            
-            const techniquesDisplay = document.getElementById('techniquesDisplay');
-            techniquesDisplay.innerHTML = '';
-            
-            // 为每个技巧创建可视化轨道
-            Object.keys(techniqueNames).forEach(techKey => {
-                if (songData[techKey] && songData[techKey].length > 0) {
-                    const row = document.createElement('div');
-                    row.className = 'technique-row';
+
+            initializeTooltip() {
+                this.tooltip = document.getElementById('waveform-tooltip');
+                const waveformContainer = document.getElementById('waveform');
+                
+                // 添加鼠标移动事件监听
+                waveformContainer.addEventListener('mousemove', (e) => {
+                    this.handleWaveformMouseMove(e);
+                });
+                
+                // 添加鼠标离开事件监听
+                waveformContainer.addEventListener('mouseleave', () => {
+                    this.hideTooltip();
+                });
+            }
+
+            handleWaveformMouseMove(e) {
+                if (!this.wavesurfer.isReady || !this.currentData) {
+                    this.hideTooltip();
+                    return;
+                }
+
+                const waveformContainer = e.currentTarget;
+                const rect = waveformContainer.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const containerWidth = rect.width;
+                
+                // 计算当前鼠标位置对应的时间
+                const duration = this.wavesurfer.getDuration();
+                const currentTime = (x / containerWidth) * duration;
+                
+                // 查找当前时间对应的单词和音素
+                const wordInfo = this.findWordAtTime(currentTime);
+                const phonemeInfo = this.findPhonemeAtTime(currentTime);
+                
+                if (wordInfo || phonemeInfo) {
+                    this.showTooltip(e.clientX, e.clientY, wordInfo, phonemeInfo, currentTime);
+                } else {
+                    this.hideTooltip();
+                }
+            }
+
+            findWordAtTime(time) {
+                return this.wordData.find(word => 
+                    time >= word.startTime && time < word.endTime
+                );
+            }
+
+            findPhonemeAtTime(time) {
+                return this.phonemeData.find(phoneme => 
+                    time >= phoneme.startTime && time < phoneme.endTime
+                );
+            }
+
+            showTooltip(mouseX, mouseY, wordInfo, phonemeInfo, currentTime) {
+                if (!this.tooltip) return;
+                
+                let content = '';
+                
+                if (wordInfo) {
+                    const techIndicators = this.getTechIndicatorsForTooltip(wordInfo);
+                    content += `
+                        <div class="tooltip-word">${wordInfo.word}</div>
+                        <div class="tooltip-note">音符: ${wordInfo.note}</div>
+                        ${techIndicators ? `<div class="tooltip-tech">${techIndicators}</div>` : ''}
+                    `;
+                }
+                
+                if (phonemeInfo) {
+                    content += `
+                        <div class="tooltip-phoneme">音素: ${phonemeInfo.phoneme}</div>
+                    `;
+                }
+                
+                content += `
+                    <div class="tooltip-time">时间: ${currentTime.toFixed(2)}s</div>
+                `;
+                
+                this.tooltip.innerHTML = content;
+                
+                // 定位tooltip
+                const tooltipRect = this.tooltip.getBoundingClientRect();
+                const waveformContainer = document.querySelector('.waveform-container');
+                const containerRect = waveformContainer.getBoundingClientRect();
+                
+                // 计算相对于waveform-container的位置
+                let tooltipX = mouseX - containerRect.left;
+                let tooltipY = mouseY - containerRect.top - tooltipRect.height - 10;
+                
+                // 边界检查
+                if (tooltipX + tooltipRect.width/2 > containerRect.width) {
+                    tooltipX = containerRect.width - tooltipRect.width/2;
+                }
+                if (tooltipX - tooltipRect.width/2 < 0) {
+                    tooltipX = tooltipRect.width/2;
+                }
+                if (tooltipY < 0) {
+                    tooltipY = mouseY - containerRect.top + 10;
+                }
+                
+                this.tooltip.style.left = `${tooltipX}px`;
+                this.tooltip.style.top = `${tooltipY}px`;
+                this.tooltip.classList.add('show');
+            }
+
+            hideTooltip() {
+                if (this.tooltip) {
+                    this.tooltip.classList.remove('show');
+                }
+            }
+
+            getTechIndicatorsForTooltip(wordInfo) {
+                if (!wordInfo.techData) return '';
+                
+                const techTypes = [
+                    { key: 'pharyngeal_tech', class: 'tech-pharyngeal', label: '咽' },
+                    { key: 'strong_tech', class: 'tech-strong', label: '强' },
+                    { key: 'glissando_tech', class: 'tech-glissando', label: '滑' },
+                    { key: 'bubble_tech', class: 'tech-bubble', label: '泡' },
+                    { key: 'breathe_tech', class: 'tech-breathe', label: '呼' },
+                    { key: 'vibrato_tech', class: 'tech-vibrato', label: '颤' },
+                    { key: 'falsetto_tech', class: 'tech-falsetto', label: '假' },
+                    { key: 'weak_tech', class: 'tech-weak', label: '弱' },
+                    { key: 'mixed_tech', class: 'tech-mixed', label: '混' }
+                ];
+                
+                return techTypes.map(tech => {
+                    if (wordInfo.techData[tech.key] === 1) {
+                        return `<span class="tooltip-tech-item ${tech.class}">${tech.label}</span>`;
+                    }
+                    return '';
+                }).join('');
+            }
+
+            bindEvents() {
+                // 文件加载事件
+                document.getElementById('audioFile').addEventListener('change', (e) => {
+                    this.loadAudioFile(e.target.files[0]);
+                });
+
+                document.getElementById('jsonFile').addEventListener('change', (e) => {
+                    this.loadJsonFile(e.target.files[0]);
+                });
+
+                // 播放控制事件
+                document.getElementById('playPauseBtn').addEventListener('click', () => {
+                    this.togglePlayPause();
+                });
+
+                document.getElementById('stopBtn').addEventListener('click', () => {
+                    this.stop();
+                });
+
+                // 键盘事件监听
+                document.addEventListener('keydown', (e) => {
+                    // 防止在输入框中触发
+                    if (e.target.tagName.toLowerCase() === 'input') return;
                     
-                    const name = document.createElement('div');
-                    name.className = 'technique-name';
-                    name.textContent = techniqueNames[techKey];
+                    if (e.code === 'Space') {
+                        e.preventDefault();
+                        this.togglePlayPause();
+                    }
+                });
+            }
+
+            async loadAudioFile(file) {
+                if (!file) return;
+
+                try {
+                    this.showLoading(true);
+                    const url = URL.createObjectURL(file);
+                    await this.wavesurfer.load(url);
+                    this.showSuccess(`音频文件 "${file.name}" 加载成功`);
+                } catch (error) {
+                    this.showError(`音频文件加载失败: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            async loadJsonFile(file) {
+                if (!file) return;
+
+                try {
+                    this.showLoading(true);
+                    const text = await file.text();
+                    this.currentData = JSON.parse(text);
+                    this.visualizeData();
+                    this.showSuccess(`歌词数据 "${file.name}" 加载成功`);
+                } catch (error) {
+                    this.showError(`JSON文件加载失败: ${error.message}`);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            visualizeData() {
+                if (!this.currentData || !this.currentData[0]) return;
+
+                const data = this.currentData[0];
+                this.clearMarkers();
+                this.buildTimelineData(data);
+                this.addMarkers(data);
+                this.renderLyrics(data);
+            }
+
+            buildTimelineData(data) {
+                this.wordData = [];
+                this.phonemeData = [];
+                
+                // 构建单词时间数据
+                let currentTime = 0;
+                data.word_list.forEach((word, index) => {
+                    if (word === '<SP>') {
+                        currentTime += data.word_durs[index];
+                        return;
+                    }
                     
-                    const track = document.createElement('div');
-                    track.className = 'technique-track';
-                    track.id = `technique-${techKey}`;
+                    const duration = data.word_durs[index];
+                    const note = data.note_list[index];
                     
-                    // 为每个音素创建技巧段
-                    songData[techKey].forEach((value, index) => {
-                        const segment = document.createElement('div');
-                        segment.className = `technique-segment ${techniqueColors[techKey]} ${value ? 'technique-active' : 'technique-inactive'}`;
-                        segment.style.width = `${100 / songData[techKey].length}%`;
-                        segment.id = `${techKey}-${index}`;
-                        track.appendChild(segment);
+                    // 收集技术标注数据
+                    const techData = {
+                        pharyngeal_tech: data.pharyngeal_tech ? data.pharyngeal_tech[index] : 0,
+                        strong_tech: data.strong_tech ? data.strong_tech[index] : 0,
+                        glissando_tech: data.glissando_tech ? data.glissando_tech[index] : 0,
+                        bubble_tech: data.bubble_tech ? data.bubble_tech[index] : 0,
+                        breathe_tech: data.breathe_tech ? data.breathe_tech[index] : 0,
+                        vibrato_tech: data.vibrato_tech ? data.vibrato_tech[index] : 0,
+                        falsetto_tech: data.falsetto_tech ? data.falsetto_tech[index] : 0,
+                        weak_tech: data.weak_tech ? data.weak_tech[index] : 0,
+                        mixed_tech: data.mixed_tech ? data.mixed_tech[index] : 0
+                    };
+                    
+                    this.wordData.push({
+                        word: word,
+                        note: note,
+                        startTime: currentTime,
+                        endTime: currentTime + duration,
+                        duration: duration,
+                        techData: techData
                     });
                     
-                    row.appendChild(name);
-                    row.appendChild(track);
-                    techniquesDisplay.appendChild(row);
-                }
-            });
-        }
-        
-        function updateHighlight() {
-            const audioPlayer = document.getElementById('audioPlayer');
-            if (!audioPlayer || !songData) return;
-            
-            const currentTime = audioPlayer.currentTime;
-            document.getElementById('currentTime').textContent = currentTime.toFixed(2);
-            
-            // 更新进度条
-            const progress = (currentTime / audioPlayer.duration) * 100;
-            document.getElementById('progressBar').style.width = `${progress}%`;
-            
-            // 计算当前音素索引
-            let phonemeTime = 0;
-            let newPhonemeIndex = -1;
-            
-            for (let i = 0; i < songData.ph_durs.length; i++) {
-                if (currentTime >= phonemeTime && currentTime < phonemeTime + songData.ph_durs[i]) {
-                    newPhonemeIndex = i;
-                    break;
-                }
-                phonemeTime += songData.ph_durs[i];
-            }
-            
-            // 计算当前词汇索引
-            let wordTime = 0;
-            let newWordIndex = -1;
-            
-            for (let i = 0; i < songData.word_durs.length; i++) {
-                if (currentTime >= wordTime && currentTime < wordTime + songData.word_durs[i]) {
-                    newWordIndex = i;
-                    break;
-                }
-                wordTime += songData.word_durs[i];
-            }
-            
-            // 更新音素高亮
-            if (newPhonemeIndex !== currentPhonemeIndex) {
-                // 移除旧高亮
-                if (currentPhonemeIndex >= 0) {
-                    const oldElement = document.getElementById(`phoneme-${currentPhonemeIndex}`);
-                    if (oldElement) oldElement.classList.remove('current');
-                }
+                    currentTime += duration;
+                });
                 
-                // 添加新高亮
-                if (newPhonemeIndex >= 0) {
-                    const newElement = document.getElementById(`phoneme-${newPhonemeIndex}`);
-                    if (newElement) {
-                        newElement.classList.add('current');
-                        // 滚动到视图中
-                        newElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // 构建音素时间数据
+                currentTime = 0;
+                data.ph_list.forEach((phoneme, index) => {
+                    const duration = data.ph_durs[index];
+                    
+                    this.phonemeData.push({
+                        phoneme: phoneme,
+                        startTime: currentTime,
+                        endTime: currentTime + duration,
+                        duration: duration
+                    });
+                    
+                    currentTime += duration;
+                });
+            }
+
+            clearMarkers() {
+                // 清除之前的标记
+                this.markers = [];
+                this.regions = [];
+                this.wordData = [];
+                this.phonemeData = [];
+            }
+
+            addMarkers(data) {
+                let currentTime = 0;
+                
+                // 为每个单词计算时间位置，用于后续的可视化
+                data.word_list.forEach((word, index) => {
+                    if (word === '<SP>') {
+                        currentTime += data.word_durs[index];
+                        return;
                     }
-                }
-                
-                currentPhonemeIndex = newPhonemeIndex;
-                
-                // 更新信息面板
-                if (currentPhonemeIndex >= 0) {
-                    document.getElementById('currentPhoneme').textContent = songData.ph_list[currentPhonemeIndex];
-                    if (songData.note_list && songData.note_list[currentPhonemeIndex] !== undefined) {
-                        document.getElementById('currentNote').textContent = songData.note_list[currentPhonemeIndex];
-                    }
-                }
-            }
-            
-            // 更新词汇高亮
-            if (newWordIndex !== currentWordIndex) {
-                // 移除旧高亮
-                if (currentWordIndex >= 0) {
-                    const oldElement = document.getElementById(`word-${currentWordIndex}`);
-                    if (oldElement) oldElement.classList.remove('current');
-                }
-                
-                // 添加新高亮
-                if (newWordIndex >= 0) {
-                    const newElement = document.getElementById(`word-${newWordIndex}`);
-                    if (newElement) {
-                        newElement.classList.add('current');
-                        newElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                }
-                
-                currentWordIndex = newWordIndex;
-                
-                // 更新信息面板
-                if (currentWordIndex >= 0) {
-                    document.getElementById('currentWord').textContent = songData.word_list[currentWordIndex];
+                    
+                    const duration = data.word_durs[index];
+                    const note = data.note_list[index];
+                    
+                    // 存储标记信息，用于在波形图上绘制
+                    this.markers.push({
+                        time: currentTime,
+                        word: word,
+                        note: note,
+                        duration: duration
+                    });
+                    
+                    currentTime += duration;
+                });
+
+                // 如果波形已经准备就绪，立即绘制标记
+                if (this.wavesurfer && this.wavesurfer.isReady) {
+                    this.drawWordMarkers();
                 }
             }
-            
-            // 高亮当前技巧段
-            if (currentPhonemeIndex >= 0) {
-                Object.keys(techniqueNames).forEach(techKey => {
-                    if (songData[techKey] && songData[techKey].length > 0) {
-                        // 移除所有当前高亮
-                        const segments = document.querySelectorAll(`[id^="${techKey}-"]`);
-                        segments.forEach(seg => seg.style.border = 'none');
-                        
-                        // 高亮当前段
-                        const currentSegment = document.getElementById(`${techKey}-${currentPhonemeIndex}`);
-                        if (currentSegment) {
-                            currentSegment.style.border = '2px solid #333';
-                        }
+
+            drawWordMarkers() {
+                const waveformContainer = document.querySelector('#waveform');
+                const duration = this.wavesurfer.getDuration();
+                
+                // 清除之前的标记
+                waveformContainer.querySelectorAll('.word-marker').forEach(el => el.remove());
+                
+                this.markers.forEach(marker => {
+                    const position = (marker.time / duration) * 100;
+                    const markerEl = document.createElement('div');
+                    markerEl.className = 'word-marker';
+                    markerEl.style.cssText = `
+                        position: absolute;
+                        left: ${position}%;
+                        top: 0;
+                        width: 2px;
+                        height: 100%;
+                        background: #ff6b6b;
+                        pointer-events: none;
+                        z-index: 10;
+                    `;
+                    markerEl.title = `${marker.word} (${marker.note})`;
+                    
+                    waveformContainer.style.position = 'relative';
+                    waveformContainer.appendChild(markerEl);
+                });
+            }
+
+            renderLyrics(data) {
+                const container = document.getElementById('lyricsContent');
+                container.innerHTML = '';
+
+                // 样式信息
+                if (data.style) {
+                    const styleSection = this.createStyleSection(data.style);
+                    container.appendChild(styleSection);
+                }
+
+                // 歌词网格
+                const lyricsGrid = document.createElement('div');
+                lyricsGrid.className = 'lyrics-grid';
+
+                // 单词列表
+                const wordSection = this.createWordSection(data);
+                lyricsGrid.appendChild(wordSection);
+
+                // 音素列表
+                const phonemeSection = this.createPhonemeSection(data);
+                lyricsGrid.appendChild(phonemeSection);
+
+                container.appendChild(lyricsGrid);
+            }
+
+            createStyleSection(style) {
+                const section = document.createElement('div');
+                section.className = 'style-info';
+                section.innerHTML = `
+                    <div class="section-title">🎭 演唱风格信息</div>
+                    <div class="style-grid">
+                        <div class="style-item">
+                            <div class="style-label">语言</div>
+                            <div class="style-value">${style.language || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">性别</div>
+                            <div class="style-value">${style.gender || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">情感</div>
+                            <div class="style-value">${style.emotion || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">方法</div>
+                            <div class="style-value">${style.method || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">节奏</div>
+                            <div class="style-value">${style.pace || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">音域</div>
+                            <div class="style-value">${style.range || 'N/A'}</div>
+                        </div>
+                        <div class="style-item">
+                            <div class="style-label">技术组</div>
+                            <div class="style-value">${style.technique_group || 'N/A'}</div>
+                        </div>
+                    </div>
+                `;
+                
+                return section;
+            }
+
+            createWordSection(data) {
+                const section = document.createElement('div');
+                section.className = 'lyrics-section';
+                
+                let currentTime = 0;
+                const wordItems = data.word_list.map((word, index) => {
+                    if (word === '<SP>') {
+                        currentTime += data.word_durs[index];
+                        return '';
+                    }
+                    
+                    const duration = data.word_durs[index];
+                    const note = data.note_list[index];
+                    const startTime = currentTime;
+                    
+                    const techIndicators = this.getTechIndicators(data, index);
+                    
+                    currentTime += duration;
+                    
+                    return `
+                        <div class="word-chip" data-start="${startTime}" data-end="${currentTime}">
+                            <div class="word-chip-text">${word}</div>
+                            <div class="word-chip-info">
+                                <div class="word-chip-duration">${duration.toFixed(2)}s</div>
+                                <div class="word-chip-note">${note}</div>
+                            </div>
+                            ${techIndicators ? `<div class="word-chip-tech">${techIndicators}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                section.innerHTML = `
+                    <div class="section-title">📝 歌词单词</div>
+                    <div class="word-list">${wordItems}</div>
+                `;
+                
+                // 添加点击事件
+                section.addEventListener('click', (e) => {
+                    const wordChip = e.target.closest('.word-chip');
+                    if (wordChip && this.wavesurfer.isReady) {
+                        const startTime = parseFloat(wordChip.dataset.start);
+                        const duration = this.wavesurfer.getDuration();
+                        const progress = startTime / duration;
+                        this.wavesurfer.seekTo(progress);
+                        this.play();
+                    }
+                });
+                
+                return section;
+            }
+
+            createPhonemeSection(data) {
+                const section = document.createElement('div');
+                section.className = 'lyrics-section';
+                
+                let currentTime = 0;
+                const phonemeItems = data.ph_list.map((phoneme, index) => {
+                    const duration = data.ph_durs[index];
+                    const startTime = currentTime;
+                    currentTime += duration;
+                    
+                    return `
+                        <span class="phoneme" data-start="${startTime}" data-end="${currentTime}">
+                            ${phoneme}
+                        </span>
+                    `;
+                }).join('');
+                
+                section.innerHTML = `
+                    <div class="section-title">🔤 音素序列</div>
+                    <div class="phoneme-list">${phonemeItems}</div>
+                `;
+                
+                return section;
+            }
+
+
+
+            getTechIndicators(data, wordIndex) {
+                const techTypes = [
+                    { key: 'pharyngeal_tech', class: 'tech-pharyngeal', label: '咽' },
+                    { key: 'strong_tech', class: 'tech-strong', label: '强' },
+                    { key: 'glissando_tech', class: 'tech-glissando', label: '滑' },
+                    { key: 'bubble_tech', class: 'tech-bubble', label: '泡' },
+                    { key: 'breathe_tech', class: 'tech-breathe', label: '呼' },
+                    { key: 'vibrato_tech', class: 'tech-vibrato', label: '颤' },
+                    { key: 'falsetto_tech', class: 'tech-falsetto', label: '假' },
+                    { key: 'weak_tech', class: 'tech-weak', label: '弱' },
+                    { key: 'mixed_tech', class: 'tech-mixed', label: '混' }
+                ];
+                
+                return techTypes.map(tech => {
+                    if (data[tech.key] && data[tech.key][wordIndex] === 1) {
+                        return `<span class="tech-indicator ${tech.class}">${tech.label}</span>`;
+                    }
+                    return '';
+                }).join('');
+            }
+
+            updateCurrentWord() {
+                const currentTime = this.wavesurfer.getCurrentTime();
+                
+                // 更新单词高亮
+                document.querySelectorAll('.word-chip').forEach(chip => {
+                    const start = parseFloat(chip.dataset.start);
+                    const end = parseFloat(chip.dataset.end);
+                    
+                    if (currentTime >= start && currentTime < end) {
+                        chip.classList.add('active');
+                    } else {
+                        chip.classList.remove('active');
+                    }
+                });
+                
+                // 更新音素高亮
+                document.querySelectorAll('.phoneme').forEach(phoneme => {
+                    const start = parseFloat(phoneme.dataset.start);
+                    const end = parseFloat(phoneme.dataset.end);
+                    
+                    if (currentTime >= start && currentTime < end) {
+                        phoneme.classList.add('active');
+                    } else {
+                        phoneme.classList.remove('active');
                     }
                 });
             }
+
+            updateTimeDisplay() {
+                const currentTime = this.wavesurfer.getCurrentTime();
+                const duration = this.wavesurfer.getDuration();
+                
+                const formatTime = (time) => {
+                    const minutes = Math.floor(time / 60);
+                    const seconds = Math.floor(time % 60);
+                    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                };
+                
+                document.getElementById('timeDisplay').textContent = 
+                    `${formatTime(currentTime)} / ${formatTime(duration)}`;
+            }
+
+            togglePlayPause() {
+                if (!this.wavesurfer.isReady) return;
+                
+                if (this.wavesurfer.isPlaying()) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+
+            play() {
+                if (this.wavesurfer.isReady) {
+                    this.wavesurfer.play();
+                    this.updatePlayButton(true);
+                }
+            }
+
+            pause() {
+                if (this.wavesurfer.isReady) {
+                    this.wavesurfer.pause();
+                    this.updatePlayButton(false);
+                }
+            }
+
+            stop() {
+                if (this.wavesurfer.isReady) {
+                    this.wavesurfer.stop();
+                    this.updatePlayButton(false);
+                }
+            }
+
+            updatePlayButton(isPlaying) {
+                const playBtn = document.getElementById('playPauseBtn');
+                const playIcon = document.getElementById('playIcon');
+                const playText = document.getElementById('playText');
+                
+                if (isPlaying) {
+                    playIcon.className = 'fas fa-pause';
+                    playText.textContent = '暂停';
+                    playBtn.classList.add('playing');
+                } else {
+                    playIcon.className = 'fas fa-play';
+                    playText.textContent = '播放';
+                    playBtn.classList.remove('playing');
+                }
+            }
+
+            resetPlayButton() {
+                this.updatePlayButton(false);
+            }
+
+            showLoading(show) {
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
+            }
+
+            showSuccess(message) {
+                this.showMessage(message, 'success');
+            }
+
+            showError(message) {
+                this.showMessage(message, 'error');
+            }
+
+            showMessage(message, type) {
+                const existing = document.querySelector(`.${type}`);
+                if (existing) existing.remove();
+                
+                const div = document.createElement('div');
+                div.className = type;
+                div.textContent = message;
+                
+                document.querySelector('.controls').appendChild(div);
+                
+                setTimeout(() => div.remove(), 5000);
+            }
         }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            new LyricsVisualizer();
+        });
     </script>
 </body>
-</html>
+</html> 
